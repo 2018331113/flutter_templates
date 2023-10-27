@@ -1,4 +1,8 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:stt/util/services/speech_to_text.dart';
 
 void main() {
   runApp(const MyApp());
@@ -9,61 +13,87 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+  const MyHomePage({Key? key}) : super(key: key);
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  MyHomePageState createState() => MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class MyHomePageState extends State<MyHomePage> {
+  final TextEditingController _controller = TextEditingController();
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  bool isListening = false;
+
+  /// Manually stop the active speech recognition session
+  /// Note that there are also timeouts that each platform enforces
+  /// and the SpeechToText plugin supports setting timeouts on the
+  /// listen method.
+
+  /// This is the callback that the SpeechToText plugin calls when
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: const Text('Speech Demo'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: const Text(
+                'Recognized words:',
+                style: TextStyle(fontSize: 20.0),
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: TextFormField(
+                    controller: _controller,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Last spoken words',
+                    )),
+              ),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        onPressed:
+            // If not yet listening for speech start, otherwise stop
+            _toggleListening,
+        tooltip: 'Listen',
+        child: Icon(!isListening ? Icons.mic_off : Icons.mic),
       ),
     );
+  }
+
+  Future<void> _toggleListening() async {
+    await SpeechToTextService().toggleListening(
+        onResult: (text) => setState(() {
+              _controller.text += text;
+              //remove the summation sign if not want to add text at the end as you speak
+            }),
+        isListening: (isListening) => setState(() {
+              this.isListening = isListening;
+            }));
   }
 }
