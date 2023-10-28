@@ -12,6 +12,13 @@
         </intent>
     </queries>
     <!--  Needs to be added for speech to text package -->
+    <!--  Needs to be added for text to speech package -->
+    <queries>
+        <intent>
+          <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+      </queries>
+    <!--  Needs to be added for text to speech package -->
     <application
         android:label="speech_to_text"
         android:name="${applicationName}"

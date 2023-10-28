@@ -1,8 +1,10 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:stt/util/services/speech_to_text.dart';
+import 'package:stt/util/services/text_to_speech.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,6 +40,14 @@ class MyHomePageState extends State<MyHomePage> {
   /// listen method.
 
   /// This is the callback that the SpeechToText plugin calls when
+  ///
+  late TextToSpeechService _tts;
+  @override
+  void initState() {
+    _tts = TextToSpeechService(FlutterTts());
+    _tts.init();
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -45,6 +55,7 @@ class MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  String _textToRead = "I am muhit. I am a developer. How are you?";
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,24 +73,42 @@ class MyHomePageState extends State<MyHomePage> {
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: TextFormField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Last spoken words',
-                    )),
-              ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: TextFormField(
+                  controller: _controller,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Last spoken words',
+                  )),
+            ),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(children: <TextSpan>[
+                TextSpan(
+                    text: _textToRead != null && _start != 0
+                        ? _textToRead!.substring(0, _start)
+                        : "",
+                    style: TextStyle(color: Colors.black)),
+                TextSpan(
+                    text: _textToRead != null
+                        ? _textToRead!.substring(_start, _end)
+                        : "",
+                    style: TextStyle(
+                        color: Colors.red, fontWeight: FontWeight.bold)),
+                TextSpan(
+                    text:
+                        _textToRead != null ? _textToRead!.substring(_end) : "",
+                    style: TextStyle(color: Colors.black)),
+              ]),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed:
-            // If not yet listening for speech start, otherwise stop
-            _toggleListening,
+            // If not yet listening for speech _start, otherwise stop
+            _toggleSpeaking,
         tooltip: 'Listen',
         child: Icon(!isListening ? Icons.mic_off : Icons.mic),
       ),
@@ -95,5 +124,21 @@ class MyHomePageState extends State<MyHomePage> {
         isListening: (isListening) => setState(() {
               this.isListening = isListening;
             }));
+  }
+
+  int _start = 0;
+  int _end = 0;
+  Future<void> _toggleSpeaking() async {
+    await _tts.speak(_textToRead, (int start, int end) {
+      setState(() {
+        _start = start;
+        _end = end;
+      });
+    }, () {
+      setState(() {
+        _start = 0;
+        _end = 0;
+      });
+    });
   }
 }
